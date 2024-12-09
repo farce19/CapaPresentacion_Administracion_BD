@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Roles Management</title>
+        <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(120deg, #3498db, #8e44ad);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .form-control {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: none;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            background-color: rgba(255, 255, 255, 0.4);
+            color: #fff;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+            outline: none;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #2980b9, #6a3093);
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        table {
+            border-collapse: separate;
+            border-spacing: 0 15px;
+        }
+        thead tr {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        tbody tr {
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        tbody tr:hover {
+            transform: translateX(10px) scale(1.02);
+        }
+        .btn-sm {
+            border-radius: 50px;
+            padding: 8px 12px;
+        }
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            text-align: center;
+            padding: 10px 0;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+        .fade-in {
+            animation: fadeIn 1.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+    </head>
+    <body>
+        <div class="container mt-5">
+            <h1 class="text-center mb-4">Roles Management</h1>
+
+            <!-- Formulario para Crear/Editar -->
+            <form id="roleForm" class="mb-5">
+                <input type="hidden" id="roleId" name="roleId">
+
+
+                <div class="mb-3">
+                    <label for="roleName" class="form-label">Role Name</label>
+                    <input type="text" class="form-control" id="roleName" name="roleName" placeholder="Enter Role Name" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="reset" class="btn btn-secondary">Reset</button>
+            </form>
+
+            <!-- Tabla de registros -->
+            <h2 class="text-center mb-4">Roles List</h2>
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Role ID</th>
+                        <th>Role Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="roleTableBody">
+                    <!-- Los registros se cargarán aquí dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <script>
+            const form = document.getElementById("roleForm");
+            const tableBody = document.getElementById("roleTableBody");
+
+            // Cargar datos al iniciar
+            function loadRoles() {
+                fetch('/api/roles')
+                        .then(response => response.json())
+                        .then(data => {
+                            tableBody.innerHTML = '';
+                            data.forEach(role => {
+                                const row = `
+                                <tr>
+                                    <td>${role.roleId}</td>
+                                    <td>${role.roleName}</td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm" onclick="editRole(${role.roleId})">Edit</button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteRole(${role.roleId})">Delete</button>
+                                    </td>
+                                </tr>
+                            `;
+                                tableBody.innerHTML += row;
+                            });
+                        })
+                        .catch(error => console.error('Error loading roles:', error));
+            }
+
+            // Guardar o actualizar rol
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();
+                const roleIdField = document.getElementById("roleId");
+                const roleId = roleIdField.value ? roleIdField.value : null; // Solo usar roleId si está presente
+                const roleName = document.getElementById("roleName").value;
+
+                const method = roleId ? "PUT" : "POST";
+                const url = roleId ? `/api/roles/${roleId}` : "/api/roles";
+
+                if (!roleId) {
+                    roleIdField.value = null; // Evitar enviar roleId al crear un nuevo rol
+                }
+
+                fetch(url, {
+                    method: method,
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({roleName})
+                })
+                        .then(response => {
+                            if (response.ok) {
+                                loadRoles();
+                                form.reset();
+                            } else {
+                                throw new Error("Failed to save role");
+                            }
+                        })
+                        .catch(error => console.error('Error saving role:', error));
+            });
+
+
+            // Editar rol
+            function editRole(id) {
+                fetch(`/api/roles/${id}`)
+                        .then(response => response.json())
+                        .then(role => {
+                            document.getElementById("roleId").value = role.roleId;
+                            document.getElementById("roleName").value = role.roleName;
+                        })
+                        .catch(error => console.error('Error editing role:', error));
+            }
+
+            // Eliminar rol
+            function deleteRole(id) {
+                if (confirm("Are you sure you want to delete this role?")) {
+                    fetch(`/api/roles/${id}`, {method: "DELETE"})
+                            .then(response => {
+                                if (response.ok) {
+                                    loadRoles();
+                                } else {
+                                    throw new Error("Failed to delete role");
+                                }
+                            })
+                            .catch(error => console.error('Error deleting role:', error));
+                }
+            }
+
+            // Cargar roles al inicio
+            loadRoles();
+        </script>
+    </body>
+</html>

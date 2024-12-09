@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provider Service Management</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(120deg, #3498db, #8e44ad);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .form-control {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: none;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            background-color: rgba(255, 255, 255, 0.4);
+            color: #fff;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+            outline: none;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #2980b9, #6a3093);
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        table {
+            border-collapse: separate;
+            border-spacing: 0 15px;
+        }
+        thead tr {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        tbody tr {
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        tbody tr:hover {
+            transform: translateX(10px) scale(1.02);
+        }
+        .btn-sm {
+            border-radius: 50px;
+            padding: 8px 12px;
+        }
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            text-align: center;
+            padding: 10px 0;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+        .fade-in {
+            animation: fadeIn 1.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Provider Services</h1>
+
+        <!-- Formulario para Crear/Editar -->
+        <form id="providerServiceForm" class="mb-5">
+            <input type="hidden" id="providerServiceId" name="providerServiceId">
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="providerId" class="form-label">Provider ID</label>
+                    <input type="number" class="form-control" id="providerId" name="providerId" placeholder="Enter Provider ID" required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="serviceId" class="form-label">Service ID</label>
+                    <input type="number" class="form-control" id="serviceId" name="serviceId" placeholder="Enter Service ID" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="reset" class="btn btn-secondary">Reset</button>
+        </form>
+
+        <!-- Tabla de registros -->
+        <h2 class="text-center mb-4">Provider Services List</h2>
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Provider Service ID</th>
+                    <th>Provider ID</th>
+                    <th>Service ID</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="providerServiceTableBody">
+                <!-- Los registros se cargarán aquí dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const form = document.getElementById("providerServiceForm");
+        const tableBody = document.getElementById("providerServiceTableBody");
+
+        function loadProviderServices() {
+            fetch('/api/provider-services')
+                .then(response => response.json())
+                .then(data => {
+                    tableBody.innerHTML = '';
+                    data.forEach(service => {
+                        const row = `
+                            <tr>
+                                <td>${service.providerServiceId}</td>
+                                <td>${service.providerId}</td>
+                                <td>${service.serviceId}</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm" onclick="editProviderService(${service.providerServiceId})">Edit</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteProviderService(${service.providerServiceId})">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                        tableBody.innerHTML += row;
+                    });
+                })
+                .catch(error => console.error('Error loading provider services:', error));
+        }
+
+        form.addEventListener("submit", function(event) {
+            event.preventDefault();
+            const providerServiceId = document.getElementById("providerServiceId").value;
+            const providerId = document.getElementById("providerId").value;
+            const serviceId = document.getElementById("serviceId").value;
+
+            const method = providerServiceId ? "PUT" : "POST";
+            const url = providerServiceId ? `/api/provider-services/${providerServiceId}` : "/api/provider-services";
+
+            fetch(url, {
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ providerServiceId, providerId, serviceId })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        loadProviderServices();
+                        form.reset();
+                    } else {
+                        throw new Error("Failed to save provider service");
+                    }
+                })
+                .catch(error => console.error('Error saving provider service:', error));
+        });
+
+        function editProviderService(id) {
+            fetch(`/api/provider-services/${id}`)
+                .then(response => response.json())
+                .then(service => {
+                    document.getElementById("providerServiceId").value = service.providerServiceId;
+                    document.getElementById("providerId").value = service.providerId;
+                    document.getElementById("serviceId").value = service.serviceId;
+                })
+                .catch(error => console.error('Error editing provider service:', error));
+        }
+
+        function deleteProviderService(id) {
+            if (confirm("Are you sure you want to delete this provider service?")) {
+                fetch(`/api/provider-services/${id}`, { method: "DELETE" })
+                    .then(response => {
+                        if (response.ok) {
+                            loadProviderServices();
+                        } else {
+                            throw new Error("Failed to delete provider service");
+                        }
+                    })
+                    .catch(error => console.error('Error deleting provider service:', error));
+            }
+        }
+
+        loadProviderServices();
+    </script>
+</body>
+</html>

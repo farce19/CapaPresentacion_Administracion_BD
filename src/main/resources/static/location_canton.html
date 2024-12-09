@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Cantones</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(120deg, #3498db, #8e44ad);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            margin: 20px auto;
+            padding: 20px;
+            max-width: 600px;
+        }
+        .btn {
+            transition: transform 0.2s ease-in-out;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        ul li {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+        ul li:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body>
+    <h1>Gestión de Cantones</h1>
+
+    <div class="card">
+        <h2>Formulario de Cantones</h2>
+        <form id="locationCantonForm">
+            <div class="mb-3">
+                <label for="cantonName" class="form-label">Nombre del Cantón</label>
+                <input type="text" id="cantonName" name="cantonName" class="form-control" placeholder="Ingrese el nombre del cantón" required>
+            </div>
+            <div class="mb-3">
+                <label for="locationProvinceId" class="form-label">ID de Provincia</label>
+                <input type="number" id="locationProvinceId" name="locationProvinceId" class="form-control" placeholder="Ingrese el ID de la provincia" required>
+            </div>
+            <button type="button" class="btn btn-primary w-100" onclick="saveLocationCanton()">Guardar Cantón</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <h2>Listado de Cantones</h2>
+        <ul id="cantonList"></ul>
+    </div>
+
+    <script>
+        const API_URL = '/location-canton';
+
+        async function fetchLocationCantons() {
+            const response = await fetch(API_URL);
+            const cantons = await response.json();
+            const cantonList = document.getElementById('cantonList');
+            cantonList.innerHTML = '';
+            cantons.forEach(canton => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `
+                    <span>ID: ${canton.locationCantonId}, Nombre: ${canton.cantonName}, Provincia ID: ${canton.locationProvinceId}</span>
+                    <span>
+                        <button class="btn btn-warning btn-sm" onclick="editLocationCanton(${canton.locationCantonId})">Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteLocationCanton(${canton.locationCantonId})">Eliminar</button>
+                    </span>
+                `;
+                cantonList.appendChild(listItem);
+            });
+        }
+
+        async function saveLocationCanton() {
+            const cantonName = document.getElementById('cantonName').value;
+            const locationProvinceId = document.getElementById('locationProvinceId').value;
+
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    cantonName,
+                    locationProvinceId
+                })
+            });
+
+            if (response.ok) {
+                alert('Cantón guardado correctamente');
+                fetchLocationCantons();
+            } else {
+                alert('Error al guardar el cantón');
+            }
+        }
+
+        async function deleteLocationCanton(id) {
+            const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                alert('Cantón eliminado correctamente');
+                fetchLocationCantons();
+            } else {
+                alert('Error al eliminar el cantón');
+            }
+        }
+
+        async function editLocationCanton(id) {
+            const cantonName = prompt('Ingrese el nuevo nombre del cantón:');
+            const locationProvinceId = prompt('Ingrese el nuevo ID de la provincia:');
+
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    cantonName,
+                    locationProvinceId
+                })
+            });
+
+            if (response.ok) {
+                alert('Cantón actualizado correctamente');
+                fetchLocationCantons();
+            } else {
+                alert('Error al actualizar el cantón');
+            }
+        }
+
+        fetchLocationCantons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Country Management</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(120deg, #3498db, #8e44ad);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .form-control {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: none;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            background-color: rgba(255, 255, 255, 0.4);
+            color: #fff;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+            outline: none;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #2980b9, #6a3093);
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        table {
+            border-collapse: separate;
+            border-spacing: 0 15px;
+        }
+        thead tr {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        tbody tr {
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        tbody tr:hover {
+            transform: translateX(10px) scale(1.02);
+        }
+        .btn-sm {
+            border-radius: 50px;
+            padding: 8px 12px;
+        }
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            text-align: center;
+            padding: 10px 0;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+        .fade-in {
+            animation: fadeIn 1.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+    <script>
+        async function fetchCountries() {
+            const response = await fetch('/location-country');
+            const countries = await response.json();
+            const tableBody = document.getElementById('countryTableBody');
+            tableBody.innerHTML = '';
+            countries.forEach(country => {
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${country.locationCountryId}</td>
+                        <td>${country.countryName}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="editCountry(${country.locationCountryId})">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteCountry(${country.locationCountryId})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function createCountry() {
+            const countryName = document.getElementById('countryName').value;
+            await fetch('/location-country', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ countryName })
+            });
+            document.getElementById('countryName').value = '';
+            fetchCountries();
+        }
+
+        async function editCountry(id) {
+            const newCountryName = prompt('Enter new country name:');
+            if (newCountryName) {
+                await fetch(`/location-country/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ countryName: newCountryName })
+                });
+                fetchCountries();
+            }
+        }
+
+        async function deleteCountry(id) {
+            if (confirm('Are you sure you want to delete this country?')) {
+                await fetch(`/location-country/${id}`, { method: 'DELETE' });
+                fetchCountries();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchCountries);
+    </script>
+</head>
+<body class="bg-light">
+    <div class="container my-5">
+        <h1 class="text-center mb-4">Location Country Management</h1>
+        <div class="mb-3">
+            <div class="input-group">
+                <input type="text" id="countryName" class="form-control" placeholder="Country Name">
+                <button class="btn btn-primary" onclick="createCountry()">Add Country</button>
+            </div>
+        </div>
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Country Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="countryTableBody"></tbody>
+        </table>
+    </div>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

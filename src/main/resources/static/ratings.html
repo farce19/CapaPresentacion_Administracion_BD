@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ratings Management</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(120deg, #3498db, #8e44ad);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .form-control {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: none;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            background-color: rgba(255, 255, 255, 0.4);
+            color: #fff;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+            outline: none;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #2980b9, #6a3093);
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        table {
+            border-collapse: separate;
+            border-spacing: 0 15px;
+        }
+        thead tr {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        tbody tr {
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        tbody tr:hover {
+            transform: translateX(10px) scale(1.02);
+        }
+        .btn-sm {
+            border-radius: 50px;
+            padding: 8px 12px;
+        }
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            text-align: center;
+            padding: 10px 0;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+        .fade-in {
+            animation: fadeIn 1.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Ratings</h1>
+
+        <!-- Formulario para Crear/Editar -->
+        <form id="ratingForm" class="mb-5">
+            <input type="hidden" id="ratingId" name="ratingId">
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="userId" class="form-label">User ID</label>
+                    <input type="number" class="form-control" id="userId" name="userId" placeholder="Enter User ID" required>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="providerId" class="form-label">Provider ID</label>
+                    <input type="number" class="form-control" id="providerId" name="providerId" placeholder="Enter Provider ID" required>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="rating" class="form-label">Rating</label>
+                    <input type="number" class="form-control" id="rating" name="rating" placeholder="Enter Rating" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="review" class="form-label">Review</label>
+                <textarea class="form-control" id="review" name="review" rows="3" placeholder="Enter review"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="reset" class="btn btn-secondary">Reset</button>
+        </form>
+
+        <!-- Tabla de registros -->
+        <h2 class="text-center mb-4">Ratings List</h2>
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Rating ID</th>
+                    <th>User ID</th>
+                    <th>Provider ID</th>
+                    <th>Rating</th>
+                    <th>Review</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="ratingTableBody">
+                <!-- Los registros se cargarán aquí dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const form = document.getElementById("ratingForm");
+        const tableBody = document.getElementById("ratingTableBody");
+
+        function loadRatings() {
+            fetch('/api/ratings')
+                .then(response => response.json())
+                .then(data => {
+                    tableBody.innerHTML = '';
+                    data.forEach(rating => {
+                        const row = `
+                            <tr>
+                                <td>${rating.ratingId}</td>
+                                <td>${rating.userId}</td>
+                                <td>${rating.providerId}</td>
+                                <td>${rating.rating}</td>
+                                <td>${rating.review || 'N/A'}</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm" onclick="editRating(${rating.ratingId})">Edit</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteRating(${rating.ratingId})">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                        tableBody.innerHTML += row;
+                    });
+                })
+                .catch(error => console.error('Error loading ratings:', error));
+        }
+
+        form.addEventListener("submit", function(event) {
+            event.preventDefault();
+            const ratingId = document.getElementById("ratingId").value;
+            const userId = document.getElementById("userId").value;
+            const providerId = document.getElementById("providerId").value;
+            const rating = document.getElementById("rating").value;
+            const review = document.getElementById("review").value;
+
+            const method = ratingId ? "PUT" : "POST";
+            const url = ratingId ? `/api/ratings/${ratingId}` : "/api/ratings";
+
+            fetch(url, {
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ratingId, userId, providerId, rating, review })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        loadRatings();
+                        form.reset();
+                    } else {
+                        throw new Error("Failed to save rating");
+                    }
+                })
+                .catch(error => console.error('Error saving rating:', error));
+        });
+
+        function editRating(id) {
+            fetch(`/api/ratings/${id}`)
+                .then(response => response.json())
+                .then(rating => {
+                    document.getElementById("ratingId").value = rating.ratingId;
+                    document.getElementById("userId").value = rating.userId;
+                    document.getElementById("providerId").value = rating.providerId;
+                    document.getElementById("rating").value = rating.rating;
+                    document.getElementById("review").value = rating.review;
+                })
+                .catch(error => console.error('Error editing rating:', error));
+        }
+
+        function deleteRating(id) {
+            if (confirm("Are you sure you want to delete this rating?")) {
+                fetch(`/api/ratings/${id}`, { method: "DELETE" })
+                    .then(response => {
+                        if (response.ok) {
+                            loadRatings();
+                        } else {
+                            throw new Error("Failed to delete rating");
+                        }
+                    })
+                    .catch(error => console.error('Error deleting rating:', error));
+            }
+        }
+
+        loadRatings();
+    </script>
+</body>
+</html>
