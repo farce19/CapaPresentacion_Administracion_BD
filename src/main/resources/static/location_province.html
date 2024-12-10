@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Provinces Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(120deg, #2c3e50, #8e44ad);
+            color: #ffff;
+            min-height: 100vh;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #ffff;
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease-in-out;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+        }
+        .table {
+            margin-top: 20px;
+            border-spacing: 0 10px;
+        }
+        .modal-content {
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .form-label {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Manage Location Provinces</h1>
+        <div class="mb-4">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#provinceModal">Add Province</button>
+        </div>
+
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Province Name</th>
+                    <th>Country</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="provinceTableBody">
+                <!-- Dynamic rows will be added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal for Add/Edit Province -->
+    <div class="modal fade" id="provinceModal" tabindex="-1" aria-labelledby="provinceModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="provinceModalLabel">Add/Edit Province</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="provinceForm">
+                        <div class="mb-3">
+                            <label for="provinceName" class="form-label">Province Name</label>
+                            <input type="text" class="form-control" id="provinceName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="countryId" class="form-label">Country</label>
+                            <select class="form-select" id="countryId" required>
+                                <!-- Countries will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <input type="hidden" id="provinceId">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveProvinceBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const API_BASE_URL = "/api/location-provinces";
+        const COUNTRY_API_URL = "/api/location-provinces/countries";
+        const provinceTableBody = document.getElementById("provinceTableBody");
+        const provinceForm = document.getElementById("provinceForm");
+        const provinceModal = new bootstrap.Modal(document.getElementById("provinceModal"));
+        const provinceIdInput = document.getElementById("provinceId");
+        const provinceNameInput = document.getElementById("provinceName");
+        const countryIdSelect = document.getElementById("countryId");
+        const saveProvinceBtn = document.getElementById("saveProvinceBtn");
+
+        const loadProvinces = async () => {
+            try {
+                const response = await axios.get(API_BASE_URL);
+                const provinces = response.data;
+                provinceTableBody.innerHTML = "";
+                provinces.forEach(province => {
+                    const row = `
+                        <tr>
+                            <td>${province.locationProvinceId}</td>
+                            <td>${province.provinceName}</td>
+                            <td>${province.locationCountry ? province.locationCountry.countryName : "N/A"}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" onclick="editProvince(${province.locationProvinceId})">Edit</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteProvince(${province.locationProvinceId})">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                    provinceTableBody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error("Error loading provinces:", error);
+            }
+        };
+
+        const loadCountries = async () => {
+            try {
+                const response = await axios.get(COUNTRY_API_URL);
+                const countries = response.data;
+                countryIdSelect.innerHTML = "<option value=''>Select a Country</option>";
+                countries.forEach(country => {
+                    const option = `<option value="${country.locationCountryId}">${country.countryName}</option>`;
+                    countryIdSelect.innerHTML += option;
+                });
+            } catch (error) {
+                console.error("Error loading countries:", error);
+            }
+        };
+
+        saveProvinceBtn.addEventListener("click", async () => {
+            const provinceId = provinceIdInput.value;
+            const provinceName = provinceNameInput.value;
+            const countryId = countryIdSelect.value;
+
+            const provinceData = {
+                provinceName,
+                locationCountry: { locationCountryId: countryId }
+            };
+
+            try {
+                if (provinceId) {
+                    await axios.put(`${API_BASE_URL}/${provinceId}`, provinceData);
+                } else {
+                    await axios.post(API_BASE_URL, provinceData);
+                }
+                provinceModal.hide();
+                loadProvinces();
+            } catch (error) {
+                console.error("Error saving province:", error);
+            }
+        });
+
+        const editProvince = async (id) => {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/${id}`);
+                const province = response.data;
+                provinceIdInput.value = province.locationProvinceId;
+                provinceNameInput.value = province.provinceName;
+                countryIdSelect.value = province.locationCountry ? province.locationCountry.locationCountryId : "";
+                provinceModal.show();
+            } catch (error) {
+                console.error("Error editing province:", error);
+            }
+        };
+
+        const deleteProvince = async (id) => {
+            if (confirm("Are you sure you want to delete this province?")) {
+                try {
+                    await axios.delete(`${API_BASE_URL}/${id}`);
+                    loadProvinces();
+                } catch (error) {
+                    console.error("Error deleting province:", error);
+                }
+            }
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadProvinces();
+            loadCountries();
+        });
+    </script>
+</body>
+</html>

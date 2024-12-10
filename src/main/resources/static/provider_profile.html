@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Provider Profile Management</title>
+        <!-- Bootstrap CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Custom CSS -->
+        <style>
+            body {
+                font-family: 'Arial', sans-serif;
+                background: linear-gradient(120deg, #3498db, #8e44ad);
+                color: #fff;
+                min-height: 100vh;
+                overflow-x: hidden;
+            }
+            h1 {
+                font-size: 3rem;
+                font-weight: bold;
+                text-transform: uppercase;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
+            .form-control {
+                background-color: rgba(255, 255, 255, 0.2);
+                color: #fff;
+                border: none;
+                transition: all 0.3s;
+            }
+            .form-control:focus {
+                background-color: rgba(255, 255, 255, 0.4);
+                color: #fff;
+                box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+                outline: none;
+            }
+            .btn-primary {
+                background: linear-gradient(90deg, #2980b9, #6a3093);
+                border: none;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+                transition: all 0.3s;
+            }
+            .btn-primary:hover {
+                transform: scale(1.05);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            }
+            table {
+                border-collapse: separate;
+                border-spacing: 0 15px;
+            }
+            thead tr {
+                background-color: rgba(0, 0, 0, 0.5);
+            }
+            tbody tr {
+                background-color: rgba(255, 255, 255, 0.1);
+                transition: transform 0.2s ease-in-out;
+            }
+            tbody tr:hover {
+                transform: translateX(10px) scale(1.02);
+            }
+            .btn-sm {
+                border-radius: 50px;
+                padding: 8px 12px;
+            }
+            footer {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                background: rgba(0, 0, 0, 0.3);
+                text-align: center;
+                padding: 10px 0;
+                color: #ddd;
+                font-size: 0.9rem;
+            }
+            .fade-in {
+                animation: fadeIn 1.5s ease-in;
+            }
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container mt-5">
+            <h1 class="text-center mb-4">Provider Profiles</h1>
+
+            <!-- Formulario -->
+            <form id="providerForm" class="mb-5">
+                <input type="hidden" id="providerId" name="providerId">
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="userId" class="form-label">User ID</label>
+                        <input type="number" class="form-control" id="userId" name="userId" placeholder="Enter User ID" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="contactId" class="form-label">Contact ID</label>
+                        <input type="number" class="form-control" id="contactId" name="contactId" placeholder="Enter Contact ID" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3" placeholder="Enter description"></textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="pricing" class="form-label">Pricing ($)</label>
+                        <input type="number" step="0.01" class="form-control" id="pricing" name="pricing" placeholder="Enter pricing" required>
+                    </div>
+
+
+                    <div class="col-md-6 mb-3">
+                        <label for="experience" class="form-label">Experience (Years)</label>
+                        <input type="number" class="form-control" id="experience" name="experience" placeholder="Enter experience in years">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="reset" class="btn btn-secondary">Reset</button>
+            </form>
+
+            <!-- Tabla -->
+            <h2 class="text-center mb-4">Provider Profiles List</h2>
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Provider ID</th>
+                        <th>User ID</th>
+                        <th>Contact ID</th>
+                        <th>Description</th>
+                        <th>Pricing</th>
+                        <th>Experience</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="providerTableBody"></tbody>
+            </table>
+        </div>
+
+        <script>
+            const form = document.getElementById("providerForm");
+            const tableBody = document.getElementById("providerTableBody");
+
+            // Cargar perfiles
+            async function loadProfiles() {
+                try {
+                    const response = await fetch("/api/provider-profiles");
+                    if (!response.ok)
+                        throw new Error("Failed to fetch profiles");
+                    const profiles = await response.json();
+                    renderTable(profiles);
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+
+            // Renderizar tabla
+            function formatCurrency(value) {
+                return `$${parseFloat(value).toFixed(2)}`;
+            }
+
+            function renderTable(profiles) {
+                tableBody.innerHTML = profiles.map(profile => `
+        <tr>
+            <td>${profile.providerId}</td>
+            <td>${profile.userId}</td>
+            <td>${profile.contactId}</td>
+            <td>${profile.description || 'N/A'}</td>
+            <td>${profile.pricing ? formatCurrency(profile.pricing) : 'N/A'}</td>
+            <td>${profile.experience || 'N/A'}</td>
+            <td>
+                <button class="btn btn-warning btn-sm" onclick="editProfile(${profile.providerId})">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteProfile(${profile.providerId})">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+            }
+
+
+            // Guardar o actualizar perfil
+            form.addEventListener("submit", async function (event) {
+                event.preventDefault();
+
+                const providerId = document.getElementById("providerId").value;
+                const payload = {
+                    userId: document.getElementById("userId").value,
+                    contactId: document.getElementById("contactId").value,
+                    description: document.getElementById("description").value,
+                    pricing: document.getElementById("pricing").value,
+                    experience: document.getElementById("experience").value
+                };
+
+                const method = providerId ? "PUT" : "POST";
+                const url = providerId ? `/api/provider-profiles/${providerId}` : "/api/provider-profiles";
+
+                try {
+                    const response = await fetch(url, {
+                        method,
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok)
+                        throw new Error("Failed to save profile");
+                    form.reset();
+                    loadProfiles(); // Recargar la tabla después de guardar
+                } catch (error) {
+                    console.error("Error saving profile:", error);
+                }
+            });
+
+
+            // Editar perfil
+            async function editProfile(id) {
+                try {
+                    const response = await fetch(`/api/provider-profiles/${id}`);
+                    if (!response.ok)
+                        throw new Error("Failed to fetch profile");
+                    const profile = await response.json();
+                    Object.entries(profile).forEach(([key, value]) => {
+                        if (form[key])
+                            form[key].value = value;
+                    });
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+
+            // Eliminar perfil
+            async function deleteProfile(id) {
+                if (confirm("Are you sure you want to delete this profile?")) {
+                    try {
+                        const response = await fetch(`/api/provider-profiles/${id}`, {method: "DELETE"});
+                        if (!response.ok)
+                            throw new Error("Failed to delete profile");
+                        loadProfiles();
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }
+            }
+
+            // Inicializar
+            loadProfiles();
+        </script>
+    </body>
+</html>
